@@ -1,0 +1,588 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>辛普森悖論實驗室</title>
+<meta name="description" content="用滑桿親手製造與破解辛普森悖論：為什麼每一組都有效的藥，合起來看卻像有害？">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#fbf7ee; --card:#ffffff; --ink:#24323f; --muted:#5f6b76; --line:#e4ddd0;
+  --mild:#2a9d8f; --severe:#e76f51; --drug:#3b6fb6; --ctrl:#9aa4ad;
+  --good:#2f9e5b; --warn:#d49a0b; --bad:#d1495b;
+  --good-bg:#e7f6ec; --warn-bg:#fdf3dc; --bad-bg:#fde8eb;
+  --shadow:0 2px 0 rgba(36,50,63,.06), 0 8px 24px rgba(36,50,63,.06);
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#161b21; --card:#1f262e; --ink:#e8edf2; --muted:#a3adb7; --line:#333d48;
+    --mild:#3cc2b2; --severe:#f08a6c; --drug:#6f9ee0; --ctrl:#7c8792;
+    --good:#4cc47e; --warn:#e8b53a; --bad:#f06b7c;
+    --good-bg:#1d3527; --warn-bg:#3a3018; --bad-bg:#3d1f25;
+    --shadow:0 2px 0 rgba(0,0,0,.2), 0 8px 24px rgba(0,0,0,.25);
+  }
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font-family:"Noto Sans TC","Microsoft JhengHei","PingFang TC",system-ui,sans-serif;line-height:1.65}
+.wrap{max-width:1120px;margin:0 auto;padding:0 16px}
+header{padding:48px 0 24px}
+.eyebrow{display:inline-block;font-size:.85rem;font-weight:700;letter-spacing:.08em;color:var(--drug);
+  background:color-mix(in srgb,var(--drug) 12%,transparent);padding:4px 12px;border-radius:999px}
+h1{font-size:clamp(2rem,5vw,3.2rem);font-weight:900;margin:14px 0 8px;line-height:1.2}
+h1 em{font-style:normal;color:var(--severe)}
+.lead{font-size:1.1rem;color:var(--muted);max-width:720px;margin:0}
+nav.steps{display:flex;gap:8px;flex-wrap:wrap;margin-top:20px}
+nav.steps a{color:var(--ink);text-decoration:none;font-size:.95rem;padding:6px 14px;border:1.5px solid var(--line);
+  border-radius:999px;background:var(--card)}
+nav.steps a:hover{border-color:var(--drug)}
+section{margin:28px 0}
+h2{font-size:1.5rem;margin:0 0 4px}
+h2 .num{display:inline-grid;place-items:center;width:32px;height:32px;border-radius:50%;background:var(--ink);
+  color:var(--bg);font-size:1rem;margin-right:8px;vertical-align:2px}
+.sub{color:var(--muted);margin:0 0 16px}
+.card{background:var(--card);border:1.5px solid var(--line);border-radius:18px;padding:20px;box-shadow:var(--shadow)}
+button{font:inherit;cursor:pointer}
+.btn{border:none;border-radius:12px;padding:10px 18px;font-weight:700;background:var(--ink);color:var(--bg);
+  transition:transform .1s, opacity .2s}
+.btn:hover{transform:translateY(-1px)}
+.btn:active{transform:translateY(1px)}
+.btn.ghost{background:transparent;color:var(--ink);border:1.5px solid var(--line)}
+.btn.ghost:hover{border-color:var(--ink)}
+.btn.drug{background:var(--drug);color:#fff}
+
+/* ---------- 腎結石 ---------- */
+.story{display:grid;grid-template-columns:1.1fr 1fr;gap:20px}
+.story p{margin:0 0 10px}
+table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}
+th,td{padding:10px 8px;text-align:center;border-bottom:1px solid var(--line)}
+th{font-size:.9rem;color:var(--muted);font-weight:500}
+td.win{font-weight:900;color:var(--good)}
+td .frac{display:block;font-size:.78rem;color:var(--muted);font-weight:400}
+.choice{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap}
+.choice .btn{flex:1;min-width:140px}
+.choice .btn.picked{outline:3px solid var(--drug);outline-offset:2px}
+.reveal{display:none;margin-top:16px}
+.reveal.show{display:block;animation:fadeUp .5s ease}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.callout{border-left:4px solid var(--severe);padding:10px 14px;background:color-mix(in srgb,var(--severe) 8%,transparent);
+  border-radius:0 10px 10px 0;margin:14px 0}
+.hidden-row td{filter:blur(6px);user-select:none}
+
+/* ---------- 實驗室 ---------- */
+.lab{display:grid;grid-template-columns:330px 1fr;gap:20px;align-items:start}
+.controls{position:sticky;top:12px}
+.ctl{margin-bottom:16px}
+.ctl label{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-weight:500;font-size:.95rem}
+.ctl output{font-weight:900;font-variant-numeric:tabular-nums;min-width:4.2em;text-align:right}
+.ctl small{display:block;color:var(--muted);font-size:.8rem;line-height:1.4;margin-top:2px}
+.dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:4px;vertical-align:0}
+input[type=range]{width:100%;accent-color:var(--drug);height:28px}
+.ctl.drugctl input{accent-color:var(--good)}
+.grouphead{font-size:.8rem;font-weight:700;letter-spacing:.06em;color:var(--muted);margin:18px 0 8px;
+  border-top:1px dashed var(--line);padding-top:12px}
+.grouphead:first-child{margin-top:0;border-top:none;padding-top:0}
+.btnrow{display:flex;gap:8px;flex-wrap:wrap}
+.btnrow .btn{flex:1}
+
+.verdict{border-radius:14px;padding:14px 18px;font-weight:700;font-size:1.1rem;display:flex;gap:12px;align-items:center;
+  transition:background .3s,color .3s}
+.verdict .icon{font-size:1.6rem}
+.verdict small{display:block;font-weight:400;font-size:.9rem;opacity:.9}
+.verdict.bad{background:var(--bad-bg);color:var(--bad)}
+.verdict.warn{background:var(--warn-bg);color:var(--warn)}
+.verdict.good{background:var(--good-bg);color:var(--good)}
+.verdict small{color:var(--ink)}
+
+.panel-title{font-weight:700;margin:0 0 10px;display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap}
+.legend{font-size:.82rem;color:var(--muted);font-weight:400;display:flex;gap:12px;flex-wrap:wrap}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:4px;vertical-align:-1px}
+.results{display:grid;gap:16px}
+.chart{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;height:250px;align-items:end;padding-top:10px}
+.cluster{display:flex;flex-direction:column;height:100%}
+.bars{flex:1;display:flex;gap:8px;align-items:flex-end;justify-content:center;border-bottom:2px solid var(--line);
+  padding:0 6px}
+.bar{width:44%;max-width:56px;border-radius:8px 8px 0 0;position:relative;transition:height .25s ease;min-height:2px}
+.bar span{position:absolute;top:-22px;left:50%;transform:translateX(-50%);font-size:.82rem;font-weight:700;
+  font-variant-numeric:tabular-nums;white-space:nowrap}
+.bar.d{background:var(--drug)} .bar.c{background:var(--ctrl)}
+.cluster .name{text-align:center;font-weight:700;margin-top:6px}
+.cluster.overall .name{color:var(--ink)}
+.diff{text-align:center;font-size:.9rem;font-weight:700;font-variant-numeric:tabular-nums}
+.diff.pos{color:var(--good)} .diff.neg{color:var(--bad)} .diff.zero{color:var(--muted)}
+.cluster.overall .bars{background:color-mix(in srgb,var(--ink) 4%,transparent);border-radius:10px 10px 0 0}
+
+.twocol{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.grids{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.gridbox h4{margin:0 0 6px;font-size:.95rem}
+.gridbox h4 b{font-variant-numeric:tabular-nums}
+.people{display:grid;grid-template-columns:repeat(10,1fr);gap:3px;max-width:220px}
+.p{aspect-ratio:1;border-radius:50%;border:2.5px solid;transition:background .25s,border-color .25s}
+.p.m{border-color:var(--mild)} .p.s{border-color:var(--severe)}
+.p.m.r{background:var(--mild)} .p.s.r{background:var(--severe)}
+
+.dag svg{width:100%;height:auto;display:block}
+.dag text{font-family:inherit;font-size:14px;font-weight:700;fill:var(--ink)}
+.dag .edgelabel{font-size:12px;font-weight:500;fill:var(--muted)}
+.dag rect{fill:var(--card);stroke:var(--line);stroke-width:2}
+
+.formula{font-size:1.05rem;line-height:2;font-variant-numeric:tabular-nums}
+.formula .term{display:inline-block;padding:0 8px;border-radius:8px;font-weight:700}
+.formula .t-crude{background:color-mix(in srgb,var(--ink) 8%,transparent)}
+.formula .t-true{background:var(--good-bg);color:var(--good)}
+.formula .t-bias{background:var(--bad-bg);color:var(--bad)}
+.formula p{margin:6px 0 0;font-size:.9rem;color:var(--muted);line-height:1.6}
+
+/* ---------- 挑戰 ---------- */
+.quests{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.quest{position:relative;padding:18px;border-radius:16px;background:var(--card);border:1.5px solid var(--line);transition:border-color .3s, background .3s}
+.quest h3{margin:0 0 6px;font-size:1.05rem}
+.quest p{margin:0;font-size:.9rem;color:var(--muted)}
+.quest .check{position:absolute;top:14px;right:14px;width:28px;height:28px;border-radius:50%;border:2px solid var(--line);
+  display:grid;place-items:center;font-weight:900;color:transparent;transition:all .3s}
+.quest.done{border-color:var(--good);background:var(--good-bg)}
+.quest.done .check{background:var(--good);border-color:var(--good);color:#fff;transform:scale(1.1)}
+.quest .hint{margin-top:10px;font-size:.82rem}
+.quest .hint summary{cursor:pointer;color:var(--drug)}
+.progress{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+.progress .track{flex:1;height:10px;border-radius:999px;background:var(--line);overflow:hidden}
+.progress .fill{height:100%;background:var(--good);width:0;transition:width .5s}
+.progress b{font-variant-numeric:tabular-nums}
+
+.toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,120px);background:var(--ink);color:var(--bg);
+  padding:12px 20px;border-radius:14px;font-weight:700;box-shadow:var(--shadow);transition:transform .35s cubic-bezier(.2,.9,.3,1.3);
+  z-index:10;max-width:calc(100% - 32px);text-align:center}
+.toast.show{transform:translate(-50%,0)}
+
+.takeaway{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.takeaway .card h3{margin:0 0 6px;font-size:1.05rem}
+.takeaway .card p{margin:0;color:var(--muted);font-size:.95rem}
+footer{padding:28px 0 48px;color:var(--muted);font-size:.85rem;text-align:center}
+footer a{color:var(--drug)}
+
+@media (max-width: 900px){
+  .story,.lab,.twocol{grid-template-columns:1fr}
+  .controls{position:static}
+  .quests{grid-template-columns:1fr 1fr}
+  .takeaway{grid-template-columns:1fr}
+}
+@media (max-width: 520px){
+  header{padding-top:28px}
+  .quests{grid-template-columns:1fr}
+  .chart{height:210px;gap:6px}
+  .bar span{font-size:.72rem}
+  .grids{gap:10px}
+}
+@media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <span class="eyebrow">因果推論互動小教室</span>
+  <h1>每一組都有效的藥，<br>合起來看卻<em>好像有害</em>？</h1>
+  <p class="lead">這叫做「辛普森悖論」。在這個實驗室裡，你可以先被它騙一次，再親手把它做出來、最後親手拆掉它。</p>
+  <nav class="steps" aria-label="章節">
+    <a href="#story">① 先猜猜看</a><a href="#lab">② 實驗室</a><a href="#quests">③ 挑戰任務</a><a href="#takeaway">④ 帶走一句話</a>
+  </nav>
+</header>
+
+<!-- ① 腎結石 -->
+<section id="story">
+  <h2><span class="num">1</span>先猜猜看：腎結石手術</h2>
+  <p class="sub">1986 年一篇英國研究比較兩種腎結石手術，以下是真實數據。</p>
+  <div class="card story">
+    <div>
+      <p>手術 <b>A</b> 是傳統開刀，手術 <b>B</b> 是經皮腎造廔取石（比較新、傷口小）。各有 350 位病人。</p>
+      <table aria-label="腎結石手術成功率">
+        <thead><tr><th></th><th>手術 A</th><th>手術 B</th></tr></thead>
+        <tbody>
+          <tr class="strat hidden-row"><th>小顆結石</th><td id="ks-a-s">93%<span class="frac">81 / 87</span></td><td>87%<span class="frac">234 / 270</span></td></tr>
+          <tr class="strat hidden-row"><th>大顆結石</th><td id="ks-a-l">73%<span class="frac">192 / 263</span></td><td>69%<span class="frac">55 / 80</span></td></tr>
+          <tr><th>全部病人</th><td>78%<span class="frac">273 / 350</span></td><td id="ks-b-t">83%<span class="frac">289 / 350</span></td></tr>
+        </tbody>
+      </table>
+      <p style="margin-top:12px"><b>如果你是病人，只看「全部病人」這一列，你會選哪一個？</b></p>
+      <div class="choice">
+        <button class="btn ghost" data-pick="A">我選手術 A</button>
+        <button class="btn ghost" data-pick="B">我選手術 B</button>
+      </div>
+    </div>
+    <div>
+      <div id="story-wait" class="callout" style="border-color:var(--drug);background:color-mix(in srgb,var(--drug) 8%,transparent)">
+        先做出選擇，表格上半部模糊的那兩列才會揭曉。
+      </div>
+      <div id="story-reveal" class="reveal">
+        <p id="story-react" style="font-weight:700;font-size:1.1rem"></p>
+        <p>分開看：<b>小顆結石</b> A 贏（93% vs 87%），<b>大顆結石</b> A 也贏（73% vs 69%）。
+        兩組都是 A 比較好，合起來卻變成 B 比較好！</p>
+        <div class="callout">
+          <b>關鍵：</b>醫師把難開的<b>大顆結石</b>多半交給 A 開刀。A 的 350 人裡有 263 人是大顆（75%），B 只有 80 人（23%）。
+          大顆結石本來成功率就低 → A 被「難病人」拖累了。
+        </div>
+        <p>「結石大小」同時影響<b>選哪種手術</b>和<b>會不會成功</b>，這種變數叫<b>混雜因子</b>（confounder）。</p>
+        <button class="btn drug" id="load-kidney">把這組情境帶進實驗室 →</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ② 實驗室 -->
+<section id="lab">
+  <h2><span class="num">2</span>實驗室：自己做一個悖論</h2>
+  <p class="sub">想像一個新藥試驗。拖動左邊滑桿，右邊所有圖會即時改變。</p>
+  <div class="lab">
+    <div class="card controls">
+      <div class="grouphead">誰拿到新藥？（混雜的來源）</div>
+      <div class="ctl">
+        <label for="pT"><span>新藥組裡的<span style="color:var(--severe)">重症</span>比例</span><output id="pT-o"></output></label>
+        <input type="range" id="pT" min="0" max="100" step="1">
+        <small>醫師常把新藥留給病情比較重的人</small>
+      </div>
+      <div class="ctl">
+        <label for="pC"><span>對照組裡的<span style="color:var(--severe)">重症</span>比例</span><output id="pC-o"></output></label>
+        <input type="range" id="pC" min="0" max="100" step="1">
+      </div>
+      <div class="grouphead">病情本身有多重要？</div>
+      <div class="ctl">
+        <label for="rM"><span><i class="dot" style="background:var(--mild)"></i>輕症不吃藥的恢復率</span><output id="rM-o"></output></label>
+        <input type="range" id="rM" min="0" max="100" step="1">
+      </div>
+      <div class="ctl">
+        <label for="rS"><span><i class="dot" style="background:var(--severe)"></i>重症不吃藥的恢復率</span><output id="rS-o"></output></label>
+        <input type="range" id="rS" min="0" max="100" step="1">
+      </div>
+      <div class="grouphead">藥到底有沒有用？（真相）</div>
+      <div class="ctl drugctl">
+        <label for="d"><span>新藥的<b>真實</b>效果</span><output id="d-o"></output></label>
+        <input type="range" id="d" min="-30" max="30" step="1">
+        <small>吃藥後恢復率在每一層都增加這麼多個百分點</small>
+      </div>
+      <div class="btnrow">
+        <button class="btn drug" id="randomize" title="把兩組的重症比例變成一樣">🎲 隨機分派</button>
+        <button class="btn ghost" id="reset">重設</button>
+      </div>
+    </div>
+
+    <div class="results">
+      <div id="verdict" class="verdict" role="status" aria-live="polite"></div>
+
+      <div class="card">
+        <div class="panel-title">恢復率比較
+          <span class="legend"><span><i style="background:var(--drug)"></i>新藥組</span><span><i style="background:var(--ctrl)"></i>對照組</span></span>
+        </div>
+        <div class="chart" id="chart"></div>
+      </div>
+
+      <div class="twocol">
+        <div class="card">
+          <div class="panel-title">各 100 人長什麼樣子
+            <span class="legend"><span><i style="background:var(--mild)"></i>輕症</span><span><i style="background:var(--severe)"></i>重症</span><span>實心＝恢復</span></span>
+          </div>
+          <div class="grids">
+            <div class="gridbox"><h4>新藥組 <b id="gT"></b></h4><div class="people" id="peopleT"></div></div>
+            <div class="gridbox"><h4>對照組 <b id="gC"></b></h4><div class="people" id="peopleC"></div></div>
+          </div>
+        </div>
+        <div class="card dag">
+          <div class="panel-title">因果圖<span class="legend">箭頭越粗＝影響越大</span></div>
+          <svg viewBox="0 0 360 220" role="img" aria-label="因果圖：病情嚴重度影響是否用藥與恢復，用藥影響恢復">
+            <defs>
+              <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="12" markerHeight="12" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="context-stroke"/>
+              </marker>
+            </defs>
+            <line id="eZX" x1="150" y1="58" x2="88" y2="150" stroke="var(--severe)" stroke-linecap="round" marker-end="url(#ah)"/>
+            <line id="eZY" x1="210" y1="58" x2="272" y2="150" stroke="var(--severe)" stroke-linecap="round" marker-end="url(#ah)"/>
+            <line id="eXY" x1="122" y1="182" x2="232" y2="182" stroke="var(--good)" stroke-linecap="round" marker-end="url(#ah)"/>
+            <rect x="115" y="14" width="130" height="40" rx="12"/><text x="180" y="40" text-anchor="middle">病情嚴重度</text>
+            <rect x="10" y="160" width="110" height="40" rx="12"/><text x="65" y="186" text-anchor="middle">吃新藥</text>
+            <rect x="240" y="160" width="110" height="40" rx="12"/><text x="295" y="186" text-anchor="middle">恢復</text>
+            <text class="edgelabel" x="104" y="104" text-anchor="end" id="lZX"></text>
+            <text class="edgelabel" x="256" y="104" id="lZY"></text>
+            <text class="edgelabel" x="180" y="214" text-anchor="middle" id="lXY"></text>
+          </svg>
+        </div>
+      </div>
+
+      <div class="card formula">
+        <div class="panel-title">拆解：整體差距是怎麼來的？</div>
+        <div id="formula"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ③ 挑戰 -->
+<section id="quests">
+  <h2><span class="num">3</span>挑戰任務</h2>
+  <p class="sub">用上面的滑桿達成條件，會自動打勾。</p>
+  <div class="progress"><b id="qcount">0 / 4</b><div class="track"><div class="fill" id="qfill"></div></div>
+    <button class="btn ghost" id="qreset" style="padding:6px 12px;font-size:.85rem">清除進度</button></div>
+  <div class="quests">
+    <div class="quest" data-q="1"><div class="check">✓</div><h3>猜猜看</h3>
+      <p>在腎結石案例做出選擇，看到真相。</p></div>
+    <div class="quest" data-q="2"><div class="check">✓</div><h3>反轉</h3>
+      <p>新藥在輕症、重症<b>都</b>好 ≥ 5 個百分點，但整體看起來<b>比較差</b>。</p>
+      <details class="hint"><summary>提示</summary>讓重症幾乎都拿到新藥，並拉大輕重症的恢復率差距。</details></div>
+    <div class="quest" data-q="3"><div class="check">✓</div><h3>無中生有</h3>
+      <p>新藥真實效果 = 0，整體卻看起來好 ≥ 10 個百分點。</p>
+      <details class="hint"><summary>提示</summary>反過來想：如果新藥都給了<b>輕症</b>的人呢？</details></div>
+    <div class="quest" data-q="4"><div class="check">✓</div><h3>隨機分派的魔法</h3>
+      <p>真實效果 ≠ 0 時，讓整體差距與真實效果相差 &lt; 0.5 個百分點。</p>
+      <details class="hint"><summary>提示</summary>試試那顆 🎲 按鈕。</details></div>
+  </div>
+</section>
+
+<!-- ④ 重點 -->
+<section id="takeaway">
+  <h2><span class="num">4</span>帶走一句話</h2>
+  <div class="takeaway">
+    <div class="card"><h3>整體差距 ≠ 因果效果</h3><p>當某個變數同時影響「誰接受治療」和「結果」，直接比較兩組就會被它污染。</p></div>
+    <div class="card"><h3>偏差 ＝ 分配不均 × 預後差異</h3><p>兩組的重症比例差越多、重症與輕症的預後差越大，混雜偏差就越大；任一項為 0，偏差就消失。</p></div>
+    <div class="card"><h3>解法：隨機分派或分層調整</h3><p>隨機分派讓兩組在各方面平均起來一樣；觀察性研究則要靠分層、標準化、傾向分數等方法調整。</p></div>
+  </div>
+</section>
+
+<footer>
+  以 Vibe Coding 與 AI 協作完成 · 腎結石數據：Charig CR, et al. <i>BMJ</i> 1986;292:879–882<br>
+  單一 index.html，無外部函式庫
+</footer>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(() => {
+  const DEFAULTS = { pT: 75, pC: 25, rM: 90, rS: 40, d: 5 };
+  const KIDNEY   = { pT: 75, pC: 23, rM: 87, rS: 69, d: 5 };
+  const S = { ...DEFAULTS };
+  const $ = id => document.getElementById(id);
+  const keys = ['pT', 'pC', 'rM', 'rS', 'd'];
+  let touched = false; // 預設值本身就是悖論，避免一打開就自動完成任務
+  const clamp = v => Math.max(0, Math.min(100, v));
+  const fmt = (v, dp = 1) => (Math.abs(v) < 0.05 ? 0 : v).toFixed(dp);
+  const sgn = (v, dp = 1) => Math.abs(v) < 0.05 ? '0' : (v > 0 ? '+' : '−') + fmt(Math.abs(v), dp);
+
+  // ---------- 計算 ----------
+  function compute(s) {
+    const pT = s.pT / 100, pC = s.pC / 100;
+    const cM = s.rM, cS = s.rS;
+    const tM = clamp(s.rM + s.d), tS = clamp(s.rS + s.d);
+    const crudeT = (1 - pT) * tM + pT * tS;
+    const crudeC = (1 - pC) * cM + pC * cS;
+    const dM = tM - cM, dS = tS - cS;
+    const crude = crudeT - crudeC;
+    const pbar = (pT + pC) / 2;
+    const adj = (1 - pbar) * dM + pbar * dS;
+    return { pT, pC, tM, tS, cM, cS, crudeT, crudeC, dM, dS, crude, adj, bias: crude - adj };
+  }
+
+  // ---------- 滑桿 ----------
+  keys.forEach(k => {
+    const el = $(k);
+    el.value = S[k];
+    el.addEventListener('input', () => { touched = true; S[k] = +el.value; render(); });
+  });
+  function syncSliders() { keys.forEach(k => { $(k).value = S[k]; }); }
+
+  // ---------- 長條圖 ----------
+  const chart = $('chart');
+  const clusters = [
+    { key: 'overall', name: '整體', t: r => r.crudeT, c: r => r.crudeC, diff: r => r.crude },
+    { key: 'mild', name: '輕症', t: r => r.tM, c: r => r.cM, diff: r => r.dM },
+    { key: 'severe', name: '重症', t: r => r.tS, c: r => r.cS, diff: r => r.dS },
+  ];
+  chart.innerHTML = clusters.map(c => `
+    <div class="cluster ${c.key}">
+      <div class="diff" id="df-${c.key}"></div>
+      <div class="bars">
+        <div class="bar d" id="bd-${c.key}"><span></span></div>
+        <div class="bar c" id="bc-${c.key}"><span></span></div>
+      </div>
+      <div class="name" ${c.key === 'mild' ? 'style="color:var(--mild)"' : c.key === 'severe' ? 'style="color:var(--severe)"' : ''}>${c.name}</div>
+    </div>`).join('');
+
+  function drawChart(r) {
+    clusters.forEach(c => {
+      const t = c.t(r), cv = c.c(r), df = c.diff(r);
+      const bd = $('bd-' + c.key), bc = $('bc-' + c.key);
+      bd.style.height = Math.max(t, 0.5) * 0.86 + '%';
+      bc.style.height = Math.max(cv, 0.5) * 0.86 + '%';
+      bd.firstElementChild.textContent = fmt(t, 0) + '%';
+      bc.firstElementChild.textContent = fmt(cv, 0) + '%';
+      const el = $('df-' + c.key);
+      el.textContent = (c.key === 'overall' ? '新藥 ' : '') + sgn(df);
+      el.className = 'diff ' + (df > 0.05 ? 'pos' : df < -0.05 ? 'neg' : 'zero');
+    });
+  }
+
+  // ---------- 點陣圖 ----------
+  function people(container, pSev, rMild, rSev) {
+    const nS = Math.round(pSev * 100), nM = 100 - nS;
+    const recM = Math.round(nM * rMild / 100), recS = Math.round(nS * rSev / 100);
+    const cells = [];
+    for (let i = 0; i < nM; i++) cells.push('m' + (i < recM ? ' r' : ''));
+    for (let i = 0; i < nS; i++) cells.push('s' + (i < recS ? ' r' : ''));
+    if (container.children.length !== 100) container.innerHTML = '<div class="p"></div>'.repeat(100);
+    [...container.children].forEach((el, i) => { el.className = 'p ' + cells[i]; });
+    return recM + recS;
+  }
+
+  // ---------- 因果圖 ----------
+  function drawDag(r) {
+    const w = (v, max, base = 1.5, span = 10) => base + Math.min(Math.abs(v) / max, 1) * span;
+    const zx = Math.round((r.pT - r.pC) * 100), zy = r.cM - r.cS, xy = S.d;
+    $('eZX').setAttribute('stroke-width', w(zx, 100));
+    $('eZY').setAttribute('stroke-width', w(zy, 100));
+    $('eXY').setAttribute('stroke-width', w(xy, 30, 1.5, 9));
+    $('eXY').setAttribute('stroke', xy > 0 ? 'var(--good)' : xy < 0 ? 'var(--bad)' : 'var(--ctrl)');
+    $('eXY').setAttribute('stroke-dasharray', xy === 0 ? '4 6' : '');
+    $('lZX').textContent = `重症比例差 ${sgn(zx, 0)}`;
+    $('lZY').textContent = `恢復率差 ${fmt(zy, 0)}`;
+    $('lXY').textContent = xy === 0 ? '真實效果 0（藥沒用）' : `真實效果 ${sgn(xy, 0)}`;
+  }
+
+  // ---------- 判讀 ----------
+  function verdict(r) {
+    const th = 0.5;
+    const sameSign = (r.dM >= th && r.dS >= th) || (r.dM <= -th && r.dS <= -th);
+    const stratSign = Math.sign(r.dM);
+    const v = $('verdict');
+    let cls, icon, title, sub;
+    if (sameSign && Math.abs(r.crude) >= th && Math.sign(r.crude) !== stratSign) {
+      cls = 'bad'; icon = '⚠️'; title = '悖論出現！';
+      sub = `分開看，新藥在輕症、重症都${stratSign > 0 ? '比較好' : '比較差'}；合起來看卻${r.crude > 0 ? '比較好' : '比較差'}。`;
+    } else if (Math.abs(r.adj) < 0.5 && Math.abs(r.crude) >= 3) {
+      cls = 'bad'; icon = '👻'; title = r.crude > 0 ? '藥根本沒用，看起來卻有效！' : '藥根本沒用，看起來卻有害！';
+      sub = `真實效果是 0，整體差 ${sgn(r.crude)} 全部來自混雜。`;
+    } else if (Math.abs(r.bias) >= 3) {
+      cls = 'warn'; icon = '🔍';
+      const amplified = Math.abs(r.crude) > Math.abs(r.adj);
+      title = amplified ? '效果被混雜「放大」了' : '效果被混雜「縮小」了';
+      sub = `整體差 ${sgn(r.crude)}，但調整後真正的效果是 ${sgn(r.adj)}，差了 ${fmt(Math.abs(r.bias))} 個百分點。`;
+    } else {
+      cls = 'good'; icon = '✅'; title = '整體與分層一致';
+      sub = `整體差 ${sgn(r.crude)}，與調整後效果 ${sgn(r.adj)} 幾乎相同，混雜偏差很小。`;
+    }
+    v.className = 'verdict ' + cls;
+    v.innerHTML = `<span class="icon" aria-hidden="true">${icon}</span><div>${title}<small>${sub}</small></div>`;
+  }
+
+  // ---------- 公式 ----------
+  function drawFormula(r) {
+    const gap = Math.round((r.pT - r.pC) * 100), prog = r.cM - r.cS;
+    $('formula').innerHTML = `
+      <span class="term t-crude">整體差 ${sgn(r.crude)}</span> ＝
+      <span class="term t-true">真實效果 ${sgn(r.adj)}</span> ＋
+      <span class="term t-bias">混雜偏差 ${sgn(r.bias)}</span>
+      <p>混雜偏差 ≈ −（重症比例差 ${sgn(gap, 0)}%）×（輕症比重症多恢復 ${fmt(prog, 0)}%）÷ 100。
+      ${Math.abs(gap) < 0.5 ? '兩組重症比例一樣 → 偏差消失。' : Math.abs(prog) < 0.5 ? '輕重症恢復率一樣 → 嚴重度不影響結果，偏差消失。' :
+        gap > 0 ? '新藥組重症比較多，所以新藥被「難病人」拖累。' : '新藥組輕症比較多，所以新藥沾了「好病人」的光。'}</p>`;
+  }
+
+  // ---------- 挑戰 ----------
+  const QKEY = 'simpson-lab-quests-v1';
+  let done = new Set();
+  try { done = new Set(JSON.parse(localStorage.getItem(QKEY) || '[]')); } catch (e) {}
+  const QNAMES = { 1: '猜猜看', 2: '反轉', 3: '無中生有', 4: '隨機分派的魔法' };
+  function complete(q) {
+    if (done.has(q)) return;
+    done.add(q);
+    try { localStorage.setItem(QKEY, JSON.stringify([...done])); } catch (e) {}
+    toast(`🎉 挑戰完成：${QNAMES[q]}`);
+    drawQuests();
+  }
+  function drawQuests() {
+    document.querySelectorAll('.quest').forEach(el => el.classList.toggle('done', done.has(+el.dataset.q)));
+    $('qcount').textContent = `${done.size} / 4`;
+    $('qfill').style.width = done.size * 25 + '%';
+  }
+  function checkQuests(r) {
+    if (!touched) return;
+    if (r.dM >= 5 && r.dS >= 5 && r.crude < 0) complete(2);
+    if (S.d === 0 && r.crude >= 10) complete(3);
+    if (S.d !== 0 && Math.abs(r.crude - S.d) < 0.5 && Math.abs(r.dM - S.d) < 0.01 && Math.abs(r.dS - S.d) < 0.01) complete(4);
+  }
+  $('qreset').addEventListener('click', () => {
+    done.clear();
+    try { localStorage.removeItem(QKEY); } catch (e) {}
+    drawQuests();
+  });
+
+  let toastTimer;
+  function toast(msg) {
+    const t = $('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove('show'), 2600);
+  }
+
+  // ---------- 主繪製 ----------
+  function render() {
+    keys.forEach(k => {
+      $(k + '-o').textContent = k === 'd' ? sgn(S[k], 0) : S[k] + '%';
+    });
+    const r = compute(S);
+    drawChart(r);
+    const recT = people($('peopleT'), r.pT, r.tM, r.tS);
+    const recC = people($('peopleC'), r.pC, r.cM, r.cS);
+    $('gT').textContent = `${recT} 人恢復`;
+    $('gC').textContent = `${recC} 人恢復`;
+    drawDag(r);
+    verdict(r);
+    drawFormula(r);
+    checkQuests(r);
+  }
+
+  // ---------- 動畫 ----------
+  let anim;
+  function animateTo(target, ms = 700) {
+    cancelAnimationFrame(anim);
+    const from = { ...S }, t0 = performance.now();
+    const step = now => {
+      const k = Math.min((now - t0) / ms, 1), e = 1 - Math.pow(1 - k, 3);
+      keys.forEach(key => { if (key in target) S[key] = Math.round(from[key] + (target[key] - from[key]) * e); });
+      syncSliders(); render();
+      if (k < 1) anim = requestAnimationFrame(step);
+    };
+    anim = requestAnimationFrame(step);
+  }
+  $('randomize').addEventListener('click', () => {
+    touched = true;
+    const avg = Math.round((S.pT + S.pC) / 2);
+    animateTo({ pT: avg, pC: avg });
+    toast('🎲 隨機分派：兩組的重症比例變得一樣了');
+  });
+  $('reset').addEventListener('click', () => animateTo(DEFAULTS));
+
+  // ---------- 腎結石 ----------
+  document.querySelectorAll('[data-pick]').forEach(b => b.addEventListener('click', () => {
+    document.querySelectorAll('[data-pick]').forEach(x => x.classList.toggle('picked', x === b));
+    document.querySelectorAll('.strat').forEach(row => row.classList.remove('hidden-row'));
+    $('ks-a-s').classList.add('win'); $('ks-a-l').classList.add('win');
+    $('story-wait').style.display = 'none';
+    $('story-react').textContent = b.dataset.pick === 'B'
+      ? '你選了 B——大多數人都會這樣選，因為 83% > 78%。但是……'
+      : '你選了 A——很有眼光！雖然整體 A 比較低，但其實……';
+    $('story-reveal').classList.add('show');
+    complete(1);
+  }));
+  $('load-kidney').addEventListener('click', () => {
+    $('lab').scrollIntoView({ behavior: 'smooth' });
+    animateTo(KIDNEY, 900);
+    toast('已帶入：新藥組＝手術 A，重症＝大顆結石');
+  });
+
+  drawQuests();
+  render();
+})();
+</script>
+</body>
+</html>
